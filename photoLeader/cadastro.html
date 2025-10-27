@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoLeader - Cadastro</title>
+  <link rel = "icon" type = "image/x-icon" href = "img/iconPhotoLeader.png">
+  <link rel="stylesheet" href="estiloCad.css"> 
+</head>
+
+<body>
+  <div class="container">
+    <div class="caixa-cadastro anima-esquerda">
+      <h2>Cadastro</h2>
+      <form id="formCadastro">
+        <label for="nome">Nome*</label>
+        <input type="text" id="nome" name="nome" required>
+
+        <label for="email">E-mail*</label>
+        <input type="text" id="email" name="email" required>
+
+        <label for="senha">Crie a sua senha*</label>
+        <input type="password" id="senha" name="senha" required>
+
+        <button type="submit" id="botaoConfir">Confirmar</button>
+
+        <div class="divisor">
+          <hr><span>Ou</span><hr>
+        </div>
+
+        <button type="button" id="botaoLogin">Login</button>
+
+      </form>
+    </div>
+
+    <div class="caixa-imagem anima-direita">
+      <img src="img/LoginAstro.png" alt="Astronauta" class="astronauta">
+      
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

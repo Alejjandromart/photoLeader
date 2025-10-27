@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoLeader - Login</title>
+  <link rel = "icon" type = "image/x-icon" href = "img/iconPhotoLeader.png">
+  <link rel="stylesheet" href="estiloLogin.css"> 
+</head>
+
+<body>
+  <div class="container">
+    <div class="caixa-login anima-esquerda">
+      <h2>Login</h2>
+      <form id="formLogin">
+        <label for="email">E-mail*</label>
+        <input type="text" id="email" name="email" required>
+
+        <label for="senha">Senha*</label>
+        <input type="password" id="senha" name="senha" required>
+
+        <button type="submit" id="botaoEntrar">Entrar</button>
+
+        <div class="divisor">
+          <hr><span>Ou</span><hr>
+        </div>
+
+        <button type="button" id="botaoCadastro">Cadastre-se</button>
+
+        <a href="esqueceu.html" class="esqueceu-senha">Esqueceu a sua senha?</a>
+      </form>
+    </div>
+
+    <div class="caixa-imagem anima-direita">
+      <img src="img/LoginAstro.png" alt="Astronauta" class="astronauta">
+      
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoLeader - Visualização</title>
+  <link rel = "icon" type="image/x-icon" href="img/iconPhotoLeader.png">
+  <link rel="stylesheet" href="estiloVisualizacao.css">
+</head>
+
+<body> 
+  <div class="visualizacao-container">
+    <button class="botao-fechar" id="botaoFechar"><</button>
+
+    <div class="data-midia" id="dataMidia">20/09/2025</div>
+
+    <div class="midia-container">
+      <img id="midiaAtual" src="img/iconPhotoLeader.png" alt="Imagem selecionada">
+    </div>
+
+    <div class="controles">
+      <button class="botao-navegar" id="anterior">❮</button>
+      <button class="botao-acao excluir" id="excluir">
+        <img style="width: 30px; height: 30px; margin-top: 7px;" src="img/remove.png" alt="Ícone">
+      </button>
+      <button class="botao-navegar" id="proximo">❯</button>
+    </div>
+
+  </div>
+
+  <script src="visualizar.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoLeader - Tela Inicial</title>
+    <link rel = "icon" type="image/x-icon" href="img/iconPhotoLeader.png">
+    <link rel="stylesheet" href="estiloTelaInicial.css">
+</head>
+
+<body>
+    <header class="cabecalho">
+        <h1>PhotoLeader</h1>
+        <nav>
+            <button id="botaoAdicionar">Adicionar Foto ou Vídeo</button>
+            <button id="botaoSair">Sair</button>
+        </nav>
+    </header>
+
+    <main class="conteudo">
+        <h2>Minhas Fotos e Vídeos</h2>
+        <div class="galeria" id="galeria"></div>
+    </main>
+
+    <div class="modal" id="modalUpload">
+        <div class="modal-conteudo">
+            <h3>Adicionar +</h3>
+            <form id="formUpload">
+                <label for="fotoAdicionar">Escolher arquivo:</label>
+                <input type="file" id="fotoAdicionar" accept="image/*, video/*" required>
+
+                <label for="descricao">Descrição:</label>
+                <input type="text" id="descricao" placeholder="Descrição do arquivo">
+
+                <div class="botoes-modal">
+                    <button type="button" id="fecharModal">Cancelar</button>
+                    <button type="submit">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="inicial.js"></script>
+
+</body>
+</html>
