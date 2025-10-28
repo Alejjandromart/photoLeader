@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoLeader - Galeria</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status-healthy {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-unhealthy {
+            background: #ef4444;
+            color: white;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        input, select, button {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .photo-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .photo-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+
+        .photo-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .photo-body {
+            margin-bottom: 15px;
+        }
+
+        .photo-filename {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .photo-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .photo-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #e0e7ff;
+            color: #667eea;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .photo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .photo-size {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .no-photos {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            padding: 40px;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc2626;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #10b981;
+        }
+
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        #loading {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📷 PhotoLeader - Galeria</h1>
+            <div>
+                <span id="apiStatus" class="api-status">Verificando API...</span>
+                <span id="replicaInfo"></span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <h2>Upload de Foto</h2>
+            <div id="uploadMessage"></div>
+            <div class="control-group">
+                <input type="text" id="uploadFilename" placeholder="Nome do arquivo (ex: foto.jpg)">
+                <input type="text" id="uploadUser" placeholder="Usuário">
+                <input type="text" id="uploadTags" placeholder="Tags (separadas por vírgula)">
+                <button class="btn-success" onclick="handleUpload()">📤 Upload</button>
+            </div>
+        </div>
+
+        <div class="stats" id="statsContainer">
+            <h2>📊 Estatísticas</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalPhotos">-</div>
+                    <div class="stat-label">Total de Fotos</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2>Filtrar Fotos</h2>
+            <div class="control-group">
+                <input type="text" id="searchUser" placeholder="Buscar por usuário">
+                <button onclick="filterByUser()">👤 Filtrar Usuário</button>
+                
+                <input type="text" id="searchTag" placeholder="Buscar por tag">
+                <button onclick="filterByTag()">🏷️ Filtrar Tag</button>
+                
+                <input type="text" id="searchText" placeholder="Buscar texto">
+                <button onclick="searchText()">🔍 Buscar</button>
+                
+                <button onclick="loadAllPhotos()">🔄 Todas as Fotos</button>
+            </div>
+        </div>
+
+        <div id="loading">Carregando fotos...</div>
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        // Inicialização
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAPI();
+            await loadStats();
+            await loadAllPhotos();
+        });
+
+        // Verifica status da API
+        async function checkAPI() {
+            const status = await PhotoLeaderAPI.checkAPIHealth();
+            const statusEl = document.getElementById('apiStatus');
+            const replicaInfo = document.getElementById('replicaInfo');
+            
+            if (status.status === 'healthy') {
+                statusEl.textContent = '✅ API Online';
+                statusEl.className = 'api-status status-healthy';
+                replicaInfo.textContent = ` | Replica Set: ${status.replica_set} | Primary: ${status.primary}`;
+            } else {
+                statusEl.textContent = '❌ API Offline';
+                statusEl.className = 'api-status status-unhealthy';
+            }
+        }
+
+        // Carrega estatísticas
+        async function loadStats() {
+            try {
+                const stats = await PhotoLeaderAPI.getStats();
+                document.getElementById('totalPhotos').textContent = stats.totalPhotos;
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Carrega todas as fotos
+        async function loadAllPhotos() {
+            const loading = document.getElementById('loading');
+            const gallery = document.getElementById('gallery');
+            
+            loading.style.display = 'block';
+            gallery.innerHTML = '';
+            
+            try {
+                const photos = await PhotoLeaderAPI.getPhotos({ limit: 50 });
+                PhotoLeaderAPI.renderPhotos(photos, gallery);
+            } catch (error) {
+                gallery.innerHTML = `<p class="error-message">Erro ao carregar fotos: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Upload de foto
+        async function handleUpload() {
+            const filename = document.getElementById('uploadFilename').value;
+            const user = document.getElementById('uploadUser').value;
+            const tagsInput = document.getElementById('uploadTags').value;
+            const messageEl = document.getElementById('uploadMessage');
+            
+            if (!filename || !user) {
+                PhotoLeaderAPI.showError('Preencha o nome do arquivo e usuário', messageEl);
+                return;
+            }
+            
+            const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
+            
+            try {
+                const result = await PhotoLeaderAPI.uploadPhoto({
+                    filename,
+                    user,
+                    tags,
+                    size_kb: Math.floor(Math.random() * 5000) + 100
+                });
+                
+                PhotoLeaderAPI.showSuccess('Upload realizado com sucesso!', messageEl);
+                
+                // Limpar campos
+                document.getElementById('uploadFilename').value = '';
+                document.getElementById('uploadUser').value = '';
+                document.getElementById('uploadTags').value = '';
+                
+                // Recarregar galeria e stats
+                await loadStats();
+                await loadAllPhotos();
+            } catch (error) {
+                PhotoLeaderAPI.showError(error.message, messageEl);
+            }
+        }
+
+        // Filtrar por usuário
+        async function filterByUser() {
+            const user = document.getElementById('searchUser').value;
+            if (!user) return;
+            
+            const loading = document.getElementById('loading');
+            const gallery = document.getElementById('gallery');
+            
+            loading.style.display = 'block';
+            gallery.innerHTML = '';
+            
+            try {
+                const photos = await PhotoLeaderAPI.getPhotosByUser(user);
+                PhotoLeaderAPI.renderPhotos(photos, gallery);
+            } catch (error) {
+                gallery.innerHTML = `<p class="error-message">Erro: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Filtrar por tag
+        async function filterByTag() {
+            const tag = document.getElementById('searchTag').value;
+            if (!tag) return;
+            
+            const loading = document.getElementById('loading');
+            const gallery = document.getElementById('gallery');
+            
+            loading.style.display = 'block';
+            gallery.innerHTML = '';
+            
+            try {
+                const photos = await PhotoLeaderAPI.getPhotosByTag(tag);
+                PhotoLeaderAPI.renderPhotos(photos, gallery);
+            } catch (error) {
+                gallery.innerHTML = `<p class="error-message">Erro: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Buscar texto
+        async function searchText() {
+            const query = document.getElementById('searchText').value;
+            if (!query) return;
+            
+            const loading = document.getElementById('loading');
+            const gallery = document.getElementById('gallery');
+            
+            loading.style.display = 'block';
+            gallery.innerHTML = '';
+            
+            try {
+                const photos = await PhotoLeaderAPI.searchPhotos(query);
+                PhotoLeaderAPI.renderPhotos(photos, gallery);
+            } catch (error) {
+                gallery.innerHTML = `<p class="error-message">Erro: ${error.message}</p>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
