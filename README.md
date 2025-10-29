@@ -17,6 +17,21 @@ Arquivos adicionados:
 Como executar (Windows PowerShell):
 
 1) Levantar o cluster:
+0
+Os aparelhos com `mongo 1,2,3 e 4` devem ter um arquivo `docker-compose.yml` com o script:
+
+```code
+services:
+  mongo3://mude o numero para o numero do seu mongo ex: mongo2
+    image: mongo:6.0
+    container_name: mongo3 //mude o numero para o numero do seu mongo ex: mongo2
+    restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo3:/data/db    //mude o numero para o numero do seu mongo ex: mongo2
+````
 
 ```powershell
 # a partir da pasta onde está o docker-compose.yml
