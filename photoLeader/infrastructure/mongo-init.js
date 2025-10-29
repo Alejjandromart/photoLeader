@@ -3,11 +3,11 @@
 config = {
   _id: "rs0",
   members: [
-    { _id: 0, host: "mongo1:27017" },
-    { _id: 1, host: "mongo2:27017" },
-    { _id: 2, host: "mongo3:27017" },
-    { _id: 3, host: "mongo4:27017" },
-    { _id: 4, host: "mongo5:27017" }
+    { _id: 0, host: "192.168.0.3:27017" },//principal loq (esta máquina)
+    { _id: 1, host: "192.168.0.8:27017" },//Ale
+    { _id: 2, host: "10.76.10.131:27017" },//Aila
+    { _id: 3, host: "10.76.1.61:27017" },//joel
+    { _id: 4, host: "192.168.0.2:27017" }//legion
   ]
 };
 

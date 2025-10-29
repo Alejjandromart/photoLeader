@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo1:
     image: mongo:6.0
@@ -11,56 +9,16 @@ services:
     volumes:
       - ./data/mongo1:/data/db
 
-  mongo2:
-    image: mongo:6.0
-    container_name: mongo2
+  backend:
+    build: ../backend
+    container_name: backend
     restart: always
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27018:27017"
+      - "5000:5000"
     volumes:
-      - ./data/mongo2:/data/db
-
-  mongo3:
-    image: mongo:6.0
-    container_name: mongo3
-    restart: always
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "27019:27017"
-    volumes:
-      - ./data/mongo3:/data/db
-
-  mongo4:
-    image: mongo:6.0
-    container_name: mongo4
-    restart: always
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "27020:27017"
-    volumes:
-      - ./data/mongo4:/data/db
-
-  mongo5:
-    image: mongo:6.0
-    container_name: mongo5
-    restart: always
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "27021:27017"
-    volumes:
-      - ./data/mongo5:/data/db
-
-  mongo-setup:
-    image: mongo:6.0
-    container_name: mongo-setup
+      - ../backend:/app
+      - ../frontend:/app/frontend
+    environment:
+      - MONGO_URI=mongodb://mongo1:27017/uploadDB?replicaSet=rs0
     depends_on:
       - mongo1
-      - mongo2
-      - mongo3
-      - mongo4
-      - mongo5
-    volumes:
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    entrypoint: ["/bin/sh", "-c", "sleep 5; mongo --host mongo1:27017 /docker-entrypoint-initdb.d/mongo-init.js || true"]
-    restart: "no"
