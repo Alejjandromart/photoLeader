@@ -3,7 +3,8 @@
  * Funções para comunicação com o backend Flask
  */
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Detecta automaticamente a URL base da API
+const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:5000/api`;
 
 /**
  * Configuração padrão para fetch

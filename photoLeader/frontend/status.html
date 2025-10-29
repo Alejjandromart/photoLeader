@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status do Replica Set - PhotoLeader</title>
+    <link rel="stylesheet" href="estiloStatus.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Status do Replica Set MongoDB</h1>
+            <p>Monitore a saúde dos nós do banco de dados em tempo real.</p>
+        </header>
+        <main>
+            <div id="status-info">
+                <div class="replica-info">
+                    <h2>Replica Set: <span id="replica-set-name">Carregando...</span></h2>
+                    <p id="summary-text">Carregando informações...</p>
+                </div>
+                <button id="refresh-btn">🔄 Atualizar</button>
+            </div>
+            
+            <div id="nodes-grid">
+                <!-- Cards serão inseridos aqui via JS -->
+            </div>
+            
+            <div id="loading" class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Carregando dados...</p>
+            </div>
+            <div id="error-message" class="hidden"></div>
+        </main>
+        <footer>
+            <a href="inicial.html">← Voltar para a Página Inicial</a>
+        </footer>
+    </div>
+    <script src="status.js"></script>
+</body>
+</html>

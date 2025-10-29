@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+﻿document.addEventListener("DOMContentLoaded", async () => {
   const botaoFechar = document.getElementById("botaoFechar");
   const dataMidia = document.getElementById("dataMidia");
   const anterior = document.getElementById("anterior");
@@ -6,74 +6,97 @@ document.addEventListener("DOMContentLoaded", () => {
   const excluir = document.getElementById("excluir");
   const midiaContainer = document.querySelector(".midia-container");
 
-  //qnd vc voltar pra tela inicial, meio q vai ficar salvo na telaVisualizar.html (é a persistencia)
-  const midias = JSON.parse(localStorage.getItem("todasMidias")) || [];
-  const midiaSelecionada = JSON.parse(localStorage.getItem("midiaSelecionada"));
-
+  // Carregar todas as fotos da API
+  let fotos = [];
   let indiceAtual = 0;
-  if (midiaSelecionada) {
-    indiceAtual = midias.findIndex(m => m.url === midiaSelecionada.url);
-    if (indiceAtual === -1) {
-      midias.push(midiaSelecionada);
-      indiceAtual = midias.length - 1;
+
+  try {
+    fotos = await PhotoLeaderAPI.getPhotos();
+    
+    // Se uma foto específica foi selecionada, encontrar seu índice
+    const fotoSelecionadaId = localStorage.getItem("fotoSelecionadaId");
+    if (fotoSelecionadaId) {
+      const indice = fotos.findIndex(f => f._id === fotoSelecionadaId);
+      if (indice !== -1) {
+        indiceAtual = indice;
+      }
+      localStorage.removeItem("fotoSelecionadaId"); // Limpar após usar
     }
+
+    if (fotos.length === 0) {
+      alert("Nenhuma foto encontrada. Voltando à tela inicial.");
+      window.location.href = "telaInicial.html";
+      return;
+    }
+
+    mostrarFoto(indiceAtual);
+  } catch (error) {
+    console.error("Erro ao carregar fotos:", error);
+    alert("Erro ao carregar fotos. Verifique se a API está rodando.");
+    window.location.href = "telaInicial.html";
+    return;
   }
 
-  //mostrar arquivos
-  function mostrarMidia(indice) {
-    const midia = midias[indice];
-    if (!midia) return;
+  //mostrar foto atual
+  function mostrarFoto(indice) {
+    const foto = fotos[indice];
+    if (!foto) return;
 
     midiaContainer.innerHTML = "";
 
-    if (midia.tipo.startsWith("image/")) {
-      const img = document.createElement("img");
-      img.src = midia.url;
-      img.alt = midia.descricao || "Imagem";
-      midiaContainer.appendChild(img);
-    } else if (midia.tipo.startsWith("video/")) {
-      const video = document.createElement("video");
-      video.src = midia.url;
-      video.controls = true;
-      video.style.maxHeight = "400px";
-      midiaContainer.appendChild(video);
-    }
+    // Criar imagem
+    const img = document.createElement("img");
+    img.src = data:;base64,;
+    img.alt = foto.descricao || foto.filename;
+    midiaContainer.appendChild(img);
 
-    dataMidia.textContent = midia.data || "—";
+    // Formatar data
+    const dataUpload = new Date(foto.upload_date);
+    dataMidia.textContent = dataUpload.toLocaleDateString('pt-BR');
   }
 
-  mostrarMidia(indiceAtual);
-
-  //navegar pelos arquivos
+  //navegar para foto anterior
   anterior.addEventListener("click", () => {
-    indiceAtual = (indiceAtual - 1 + midias.length) % midias.length;
-    mostrarMidia(indiceAtual);
+    indiceAtual = (indiceAtual - 1 + fotos.length) % fotos.length;
+    mostrarFoto(indiceAtual);
   });
 
+  //navegar para próxima foto
   proximo.addEventListener("click", () => {
-    indiceAtual = (indiceAtual + 1) % midias.length;
-    mostrarMidia(indiceAtual);
+    indiceAtual = (indiceAtual + 1) % fotos.length;
+    mostrarFoto(indiceAtual);
   });
 
-  //apagar arquivo
-  excluir.addEventListener("click", () => {
-    if (confirm("Deseja realmente excluir esta mídia?")) {
-      midias.splice(indiceAtual, 1);
-      localStorage.setItem("todasMidias", JSON.stringify(midias));
+  //apagar foto usando a API
+  excluir.addEventListener("click", async () => {
+    if (confirm("Deseja realmente excluir esta foto?")) {
+      try {
+        const fotoId = fotos[indiceAtual]._id;
+        await PhotoLeaderAPI.deletePhoto(fotoId);
+        
+        // Remover da lista local
+        fotos.splice(indiceAtual, 1);
 
-      if (midias.length === 0) {
-        alert("Nenhuma mídia restante. Voltando à tela inicial.");
-        window.location.href = "inicial.html";
-        return;
+        if (fotos.length === 0) {
+          alert("Nenhuma foto restante. Voltando à tela inicial.");
+          window.location.href = "telaInicial.html";
+          return;
+        }
+
+        // Ajustar índice e mostrar próxima foto
+        indiceAtual = Math.min(indiceAtual, fotos.length - 1);
+        mostrarFoto(indiceAtual);
+        
+        alert("Foto excluída com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir foto:", error);
+        alert("Erro ao excluir foto: " + error.message);
       }
-
-      indiceAtual = Math.max(0, indiceAtual - 1);
-      mostrarMidia(indiceAtual);
     }
   });
 
-  //voltar pra tela incial
+  //voltar para tela inicial
   botaoFechar.addEventListener("click", () => {
-    window.location.href = "inicial.html";
+    window.location.href = "telaInicial.html";
   });
 });

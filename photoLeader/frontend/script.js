@@ -35,8 +35,10 @@ if (formLogin) {
     const senha = document.getElementById("senha").value;
 
     if (email && senha) {
-      //pra ligar o bd 
-      window.location.href = "telainicial.html";
+      // Salvar usuário no localStorage
+      localStorage.setItem("usuarioLogado", email);
+      // Redirecionar para a tela inicial (nome correto do arquivo)
+      window.location.href = "telaInicial.html";
     } else {
       alert("Preencha todos os campos.");
     }

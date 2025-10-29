@@ -13,13 +13,16 @@ Endpoints:
 - GET /api/health - Status da API e MongoDB
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory, send_file, Response
 from flask_cors import CORS
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
 from bson import ObjectId
 from datetime import datetime
+import gridfs
+import io
 import os
+import traceback
 
 app = Flask(__name__)
 CORS(app)  # Permite requisições do frontend
@@ -27,7 +30,7 @@ CORS(app)  # Permite requisições do frontend
 # Configuração do MongoDB
 REPLICA_URI = os.environ.get(
     'MONGO_URI',
-    "mongodb://admin:admin123@10.76.9.53:27017,10.76.1.212:27017,10.76.10.131:27017,10.76.6.1:27017,10.76.1.612:27017/uploadDB?replicaSet=rsUpload"
+    "mongodb://192.168.0.3:27017,192.168.0.8:27017,192.168.0.2:27017,10.76.10.131:27017,10.76.1.61:27017/uploadDB?replicaSet=rs0&readPreference=primary"
 )
 
 DB_NAME = 'uploadDB'
@@ -35,12 +38,40 @@ COLLECTION = 'files'
 
 # Cliente MongoDB
 try:
-    client = MongoClient(REPLICA_URI, serverSelectionTimeoutMS=5000)
-    db = client[DB_NAME]
+    from pymongo.read_preferences import ReadPreference
+    from pymongo.write_concern import WriteConcern
+    
+    client = MongoClient(
+        REPLICA_URI, 
+        serverSelectionTimeoutMS=5000,
+        readPreference=ReadPreference.PRIMARY,  # Força leitura do PRIMARY
+    )
+    db = client[DB_NAME].with_options(
+        write_concern=WriteConcern(w='majority', wtimeout=5000)
+    )
     collection = db[COLLECTION]
+    # GridFS será inicializado apenas quando necessário (lazy loading)
+    fs = None
     print("✅ Conectado ao MongoDB Replica Set")
+    print("✅ GridFS será inicializado on-demand")
 except Exception as e:
     print(f"❌ Erro ao conectar ao MongoDB: {e}")
+
+
+# Helper para obter GridFS (lazy initialization)
+def get_gridfs():
+    global fs
+    if fs is None:
+        # Criar índices GridFS manualmente para garantir que são criados no PRIMARY
+        try:
+            db.fs.chunks.create_index([("files_id", 1), ("n", 1)], unique=True)
+            db.fs.files.create_index([("filename", 1), ("uploadDate", 1)])
+            print("✅ Índices GridFS criados/verificados no PRIMARY")
+        except Exception as e:
+            print(f"⚠️ Aviso ao criar índices GridFS: {e}")
+        
+        fs = gridfs.GridFS(db)
+    return fs
 
 
 # Helper para converter ObjectId em string
@@ -109,8 +140,13 @@ def get_photos():
                      .skip(skip)
                      .limit(limit))
         
-        # Serializar
+        # Serializar e adicionar URL da foto
         photos = [serialize_doc(p) for p in photos]
+        
+        # Adicionar URL para visualização da foto
+        for photo in photos:
+            if 'gridfs_id' in photo:
+                photo['photo_url'] = f"/api/photos/{photo['_id']}/file"
         
         return jsonify({
             'success': True,
@@ -139,7 +175,7 @@ def get_photo(photo_id):
         return jsonify({
             'success': True,
             'photo': serialize_doc(photo)
-        }), 200
+        }, 200)
     except Exception as e:
         return jsonify({
             'success': False,
@@ -149,45 +185,74 @@ def get_photo(photo_id):
 
 @app.route('/api/photos', methods=['POST'])
 def upload_photo():
-    """Cria metadados de uma nova foto"""
+    """Upload de foto completa usando GridFS"""
     try:
-        data = request.get_json()
-        
-        # Validação básica
-        if not data.get('filename'):
+        # Verificar se há arquivo na requisição
+        if 'file' not in request.files:
             return jsonify({
                 'success': False,
-                'error': 'Campo "filename" é obrigatório'
+                'error': 'Nenhum arquivo enviado'
             }), 400
         
-        if not data.get('user'):
+        file = request.files['file']
+        
+        if file.filename == '':
             return jsonify({
                 'success': False,
-                'error': 'Campo "user" é obrigatório'
+                'error': 'Nome do arquivo vazio'
             }), 400
         
-        # Criar documento
-        photo = {
-            'filename': data['filename'],
-            'user': data['user'],
-            'tags': data.get('tags', []),
+        # Obter metadados do formulário
+        user = request.form.get('user', 'usuario_padrao')
+        description = request.form.get('description', '')
+        tags = request.form.get('tags', '').split(',') if request.form.get('tags') else []
+        
+        # Ler o arquivo em memória
+        file_data = file.read()
+        
+        # Salvar no GridFS com writeConcern majority
+        file_id = get_gridfs().put(
+            file_data,
+            filename=file.filename,
+            content_type=file.content_type,
+            user=user,
+            description=description,
+            tags=tags,
+            upload_date=datetime.utcnow(),
+            size_kb=len(file_data) / 1024
+        )
+        
+        # Criar documento de metadados na collection principal
+        photo_doc = {
+            'gridfs_id': file_id,
+            'filename': file.filename,
+            'user': user,
+            'description': description,
+            'tags': tags,
             'upload_date': datetime.utcnow(),
-            'status': data.get('status', 'uploaded'),
-            'size_kb': data.get('size_kb', 0),
-            'description': data.get('description', '')
+            'size_kb': len(file_data) / 1024,
+            'content_type': file.content_type,
+            'status': 'uploaded'
         }
         
-        # Inserir com writeConcern majority
-        result = collection.with_options(
-            write_concern={'w': 'majority'}
-        ).insert_one(photo)
+        result = collection.insert_one(photo_doc)
         
         return jsonify({
             'success': True,
-            'photo_id': str(result.inserted_id),
-            'message': 'Foto criada com sucesso'
+            'data': {
+                '_id': str(result.inserted_id),
+                'gridfs_id': str(file_id),
+                'filename': file.filename,
+                'user': user,
+                'description': description,
+                'tags': tags,
+                'size_kb': round(len(file_data) / 1024, 2)
+            },
+            'message': 'Foto enviada com sucesso!'
         }), 201
+        
     except Exception as e:
+        print(f"Erro no upload: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -196,21 +261,75 @@ def upload_photo():
 
 @app.route('/api/photos/<photo_id>', methods=['DELETE'])
 def delete_photo(photo_id):
-    """Remove uma foto"""
+    """Remove uma foto e seu arquivo do GridFS"""
     try:
-        result = collection.delete_one({'_id': ObjectId(photo_id)})
+        # Buscar a foto para obter o gridfs_id
+        photo = collection.find_one({'_id': ObjectId(photo_id)})
         
-        if result.deleted_count == 0:
+        if not photo:
             return jsonify({
                 'success': False,
                 'error': 'Foto não encontrada'
             }), 404
+        
+        # Remover arquivo do GridFS se existir
+        if 'gridfs_id' in photo:
+            try:
+                get_gridfs().delete(photo['gridfs_id'])
+            except Exception as e:
+                print(f"Erro ao remover arquivo do GridFS: {e}")
+        
+        # Remover documento da collection
+        collection.delete_one({'_id': ObjectId(photo_id)})
         
         return jsonify({
             'success': True,
             'message': 'Foto removida com sucesso'
         }), 200
     except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/photos/<photo_id>/file', methods=['GET'])
+def get_photo_file(photo_id):
+    """Baixa o arquivo da foto do GridFS"""
+    try:
+        # Buscar a foto
+        photo = collection.find_one({'_id': ObjectId(photo_id)})
+        
+        if not photo or 'gridfs_id' not in photo:
+            return jsonify({
+                'success': False,
+                'error': 'Foto não encontrada'
+            }), 404
+        
+        # Buscar arquivo no GridFS
+        try:
+            grid_out = get_gridfs().get(photo['gridfs_id'])
+        except gridfs.errors.NoFile:
+            return jsonify({
+                'success': False,
+                'error': 'Arquivo não encontrado no GridFS'
+            }), 404
+        
+        # Retornar arquivo como resposta
+        return Response(
+            grid_out.read(),
+            mimetype=photo.get('content_type', 'application/octet-stream'),
+            headers={
+                'Content-Disposition': f'inline; filename="{photo["filename"]}"'
+            }
+        )
+        
+    except Exception as e:
+        print(f"Erro ao buscar arquivo: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
         return jsonify({
             'success': False,
             'error': str(e)
@@ -334,24 +453,66 @@ def search_photos():
         }), 500
 
 
+@app.route('/api/replicaset/status', methods=['GET'])
+def get_replicaset_status():
+    """Retorna o status detalhado dos membros do Replica Set"""
+    try:
+        # Executar comando no PRIMARY usando direct_connection para evitar erro de routing
+        # Tentar obter status usando qualquer membro disponível
+        try:
+            status = client.admin.command('replSetGetStatus')
+        except Exception as e:
+            # Se falhar, tentar conectar diretamente no PRIMARY conhecido
+            print(f"Aviso ao obter status: {e}")
+            # Criar cliente temporário direto para admin commands
+            temp_client = MongoClient(
+                "mongodb://192.168.0.8:27017/?directConnection=true",
+                serverSelectionTimeoutMS=2000
+            )
+            status = temp_client.admin.command('replSetGetStatus')
+            temp_client.close()
+        
+        members = []
+        for member in status.get('members', []):
+            members.append({
+                'name': member.get('name'),
+                'state': member.get('stateStr'),
+                'health': 'Healthy' if member.get('health') == 1 else 'Unhealthy',
+                'uptime': member.get('uptime'),
+                'pingMs': member.get('pingMs', 'N/A')
+            })
+        
+        return jsonify({
+            'success': True,
+            'replica_set_name': status.get('set'),
+            'members': members
+        }), 200
+    except Exception as e:
+        error_traceback = traceback.format_exc()
+        print(f"Erro no endpoint /api/replicaset/status: {str(e)}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': error_traceback
+        }), 500
+
+
+@app.route('/<path:path>')
+def serve_static_files(path):
+    """Serve arquivos estáticos do diretório frontend"""
+    return send_from_directory('frontend', path)
+
+
 # Rota raiz
 @app.route('/')
 def index():
-    """Página inicial da API"""
-    return jsonify({
-        'api': 'PhotoLeader API',
-        'version': '1.0',
-        'endpoints': {
-            'health': '/api/health',
-            'photos': '/api/photos',
-            'upload': 'POST /api/photos',
-            'delete': 'DELETE /api/photos/<id>',
-            'user_photos': '/api/photos/user/<username>',
-            'tag_photos': '/api/photos/tag/<tag>',
-            'search': '/api/search?q=<query>',
-            'stats': '/api/stats'
-        }
-    })
+    """Serve a página de login como página inicial"""
+    response = send_from_directory('frontend', 'login.html')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 if __name__ == '__main__':
@@ -369,6 +530,7 @@ if __name__ == '__main__':
     print("  GET  /api/photos/tag/<t>  - Fotos por tag")
     print("  GET  /api/search?q=<text> - Busca texto")
     print("  GET  /api/stats           - Estatísticas")
+    print("  GET  /api/replicaset/status - Status do Replica Set")
     print("\n")
     
     # Run in non-debug mode for more stable background execution on Windows

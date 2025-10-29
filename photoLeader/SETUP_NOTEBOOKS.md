@@ -95,11 +95,11 @@ docker ps
 
 | Notebook | Nome do Container | IP Real        | Status |
 |----------|-------------------|----------------|--------|
-| 1        | mongo1            | 192.168.0.3    | ✅     |
-| 2        | mongo2            | 192.168.0.__   | ⏳     |
-| 3        | mongo3            | 192.168.0.__   | ⏳     |
-| 4        | mongo4            | 192.168.0.__   | ⏳     |
-| 5        | mongo5            | 192.168.0.__   | ⏳     |
+| 1        | mongo1            | 10.76.9.53     | ✅     |
+| 2        | mongo2            | 10.76.1.212    | ✅     |
+| 3        | mongo3            | 10.76.10.131   | ✅     |
+| 4        | mongo4            | 10.76.6.1      | ✅     |
+| 5        | mongo5            | 10.76.1.612    | ⏳     |
 
 ---
 
@@ -116,11 +116,11 @@ rs.initiate({
   _id: "rsUpload",
   version: 1,
   members: [
-    { _id: 0, host: "192.168.0.3:27017" },    // Notebook 1
-    { _id: 1, host: "192.168.0.__:27017" },   // Notebook 2 - SUBSTITUA
-    { _id: 2, host: "192.168.0.__:27017" },   // Notebook 3 - SUBSTITUA
-    { _id: 3, host: "192.168.0.__:27017" },   // Notebook 4 - SUBSTITUA
-    { _id: 4, host: "192.168.0.__:27017" }    // Notebook 5 - SUBSTITUA
+    { _id: 0, host: "10.76.9.53:27017" },     // Notebook 1
+    { _id: 1, host: "10.76.1.212:27017" },    // Notebook 2
+    { _id: 2, host: "10.76.10.131:27017" },   // Notebook 3
+    { _id: 3, host: "10.76.6.1:27017" },      // Notebook 4
+    { _id: 4, host: "10.76.1.612:27017" }     // Notebook 5
   ]
 });
 ```
