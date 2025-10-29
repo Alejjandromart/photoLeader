@@ -27,7 +27,7 @@ CORS(app)  # Permite requisições do frontend
 # Configuração do MongoDB
 REPLICA_URI = os.environ.get(
     'MONGO_URI',
-    "mongodb://admin:admin123@10.76.9.53:27017,10.76.1.212:27017,10.76.10.131:27017,10.76.6.1:27017/uploadDB?replicaSet=rsUpload"
+    "mongodb://admin:admin123@10.76.9.53:27017,10.76.1.212:27017,10.76.10.131:27017,10.76.6.1:27017,10.76.1.612:27017/uploadDB?replicaSet=rsUpload"
 )
 
 DB_NAME = 'uploadDB'
@@ -371,4 +371,5 @@ if __name__ == '__main__':
     print("  GET  /api/stats           - Estatísticas")
     print("\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Run in non-debug mode for more stable background execution on Windows
+    app.run(debug=False, host='0.0.0.0', port=5000)

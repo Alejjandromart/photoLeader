@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoLeader - Status do Cluster</title>
+    <link rel="icon" type="image/x-icon" href="img/iconPhotoLeader.png">
+    <link rel="stylesheet" href="estiloCluster.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 Status do Cluster MongoDB</h1>
+            <p class="subtitle">Replica Set: <span id="replicaSetName">Carregando...</span></p>
+            <button id="btnRefresh" class="btn-refresh">🔄 Atualizar</button>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalMembers">0</div>
+                <div class="stat-label">Total de Nós</div>
+            </div>
+            <div class="stat-card healthy">
+                <div class="stat-value" id="healthyMembers">0</div>
+                <div class="stat-label">Nós Saudáveis</div>
+            </div>
+            <div class="stat-card primary">
+                <div class="stat-value" id="primaryCount">0</div>
+                <div class="stat-label">Primary</div>
+            </div>
+            <div class="stat-card secondary">
+                <div class="stat-value" id="secondaryCount">0</div>
+                <div class="stat-label">Secondaries</div>
+            </div>
+        </div>
+
+        <div class="members-container" id="membersContainer">
+            <!-- Os membros serão inseridos aqui dinamicamente -->
+        </div>
+
+        <div class="last-update">
+            Última atualização: <span id="lastUpdate">-</span>
+        </div>
+    </div>
+
+    <script src="cluster.js"></script>
+</body>
+</html>
