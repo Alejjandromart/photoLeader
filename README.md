@@ -18,7 +18,7 @@ Como executar (Windows PowerShell):
 
 1) Levantar o cluster:
 0
-Os aparelhos com `mongo 1,2,3 e 4` devem ter um arquivo `docker-compose.yml` com o script:
+Os aparelhos com `mongo 2,3 e 4` devem ter um arquivo `docker-compose.yml` com o script:
 
 ```code
 services:
