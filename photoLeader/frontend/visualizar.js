@@ -44,10 +44,14 @@
 
     midiaContainer.innerHTML = "";
 
-    // Criar imagem
+    // Criar imagem usando a URL da API
     const img = document.createElement("img");
-    img.src = data:;base64,;
-    img.alt = foto.descricao || foto.filename;
+    const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:5000`;
+    img.src = `${API_BASE_URL}/api/photos/${foto._id}/file`;
+    img.alt = foto.description || foto.filename;
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "500px";
+    img.style.objectFit = "contain";
     midiaContainer.appendChild(img);
 
     // Formatar data

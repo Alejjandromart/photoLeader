@@ -5,8 +5,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingEl = document.getElementById('loading');
     const errorMessageEl = document.getElementById('error-message');
     const refreshBtn = document.getElementById('refresh-btn');
+    const failoverCountEl = document.getElementById('failover-count');
 
     const API_URL = '/api/replicaset/status';
+
+    // Variáveis para rastrear failovers
+    let lastPrimary = null;
+    let failoverCount = parseInt(localStorage.getItem('failoverCount') || '0');
+    
+    // Atualizar contador no DOM
+    failoverCountEl.textContent = failoverCount;
 
     // Mapeamento de ícones para os estados
     const stateIcons = {
@@ -55,6 +63,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const healthy = data.members.filter(m => m.health === 'Healthy').length;
             const total = data.members.length;
             const primary = data.members.find(m => m.state === 'PRIMARY');
+            
+            // Detectar mudança de PRIMARY (failover)
+            const currentPrimary = primary ? primary.name : null;
+            if (lastPrimary && currentPrimary && lastPrimary !== currentPrimary) {
+                failoverCount++;
+                localStorage.setItem('failoverCount', failoverCount.toString());
+                failoverCountEl.textContent = failoverCount;
+                
+                // Animação de destaque
+                failoverCountEl.parentElement.style.animation = 'none';
+                setTimeout(() => {
+                    failoverCountEl.parentElement.style.animation = 'pulse 0.5s ease-in-out';
+                }, 10);
+            }
+            lastPrimary = currentPrimary;
             
             summaryTextEl.textContent = `${healthy}/${total} nós saudáveis • Primary: ${primary ? primary.name : 'Nenhum'}`;
 
@@ -181,6 +204,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     refreshBtn.addEventListener('click', fetchStatus);
+    
+    // Botão de reset do contador de failover
+    const resetCounterBtn = document.getElementById('reset-counter-btn');
+    resetCounterBtn.addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja resetar o contador de failovers?')) {
+            failoverCount = 0;
+            localStorage.setItem('failoverCount', '0');
+            failoverCountEl.textContent = '0';
+            lastPrimary = null; // Reset para permitir nova contagem
+        }
+    });
 
     // Atualização automática a cada 10 segundos
     setInterval(fetchStatus, 10000);

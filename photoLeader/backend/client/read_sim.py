@@ -17,7 +17,7 @@ SEEDS = ["mongodb://localhost:27017",
          "mongodb://localhost:27021"]
 
 # String de conexão para os 5 notebooks na rede
-REPLICA_URI = "mongodb://admin:admin123@10.76.9.53:27017,10.76.1.212:27017,10.76.10.131:27017,10.76.6.1:27017,10.76.1.612:27017/uploadDB?replicaSet=rsUpload"
+REPLICA_URI = "mongodb://10.63.144.180:27017,10.63.144.236:27017,10.63.144.43:27017,10.63.144.241:27017,10.63.144.171:27017/uploadDB?replicaSet=rs0"
 
 DB_NAME = 'uploadDB'
 COLLECTION = 'files'

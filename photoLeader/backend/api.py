@@ -30,7 +30,7 @@ CORS(app)  # Permite requisições do frontend
 # Configuração do MongoDB
 REPLICA_URI = os.environ.get(
     'MONGO_URI',
-    "mongodb://192.168.0.3:27017,192.168.0.8:27017,192.168.0.2:27017,10.76.10.131:27017,10.76.1.61:27017/uploadDB?replicaSet=rs0&readPreference=primary"
+    "mongodb://10.63.144.180:27017,10.63.144.236:27017,10.63.144.43:27017,10.63.144.241:27017,10.63.144.171:27017/uploadDB?replicaSet=rs0&readPreference=primary"
 )
 
 DB_NAME = 'uploadDB'
@@ -44,7 +44,7 @@ try:
     client = MongoClient(
         REPLICA_URI, 
         serverSelectionTimeoutMS=5000,
-        readPreference=ReadPreference.PRIMARY,  # Força leitura do PRIMARY
+        readPreference='primary',  # Força leitura do PRIMARY
     )
     db = client[DB_NAME].with_options(
         write_concern=WriteConcern(w='majority', wtimeout=5000)
@@ -77,8 +77,11 @@ def get_gridfs():
 # Helper para converter ObjectId em string
 def serialize_doc(doc):
     """Converte ObjectId para string para JSON"""
-    if doc and '_id' in doc:
-        doc['_id'] = str(doc['_id'])
+    if doc:
+        if '_id' in doc:
+            doc['_id'] = str(doc['_id'])
+        if 'gridfs_id' in doc and isinstance(doc['gridfs_id'], ObjectId):
+            doc['gridfs_id'] = str(doc['gridfs_id'])
     return doc
 
 
@@ -121,11 +124,15 @@ def health_check():
 def get_photos():
     """Lista todas as fotos (últimas 50)"""
     try:
+        print("📸 Recebendo requisição GET /api/photos")
+        
         # Parâmetros de query
         limit = int(request.args.get('limit', 50))
         skip = int(request.args.get('skip', 0))
         tag = request.args.get('tag')
         user = request.args.get('user')
+        
+        print(f"   Params: limit={limit}, skip={skip}, tag={tag}, user={user}")
         
         # Construir query
         query = {}
@@ -134,11 +141,19 @@ def get_photos():
         if user:
             query['user'] = user
         
+        print(f"   Query: {query}")
+        
+        # Usar collection com leitura de secondary para listar fotos
+        read_collection = collection.with_options(read_preference=ReadPreference.SECONDARY_PREFERRED)
+        
+        print("   Executando find()...")
         # Buscar documentos
-        photos = list(collection.find(query)
+        photos = list(read_collection.find(query)
                      .sort('upload_date', -1)
                      .skip(skip)
                      .limit(limit))
+        
+        print(f"   ✅ Encontradas {len(photos)} fotos")
         
         # Serializar e adicionar URL da foto
         photos = [serialize_doc(p) for p in photos]
@@ -148,12 +163,15 @@ def get_photos():
             if 'gridfs_id' in photo:
                 photo['photo_url'] = f"/api/photos/{photo['_id']}/file"
         
+        print(f"   ✅ Retornando {len(photos)} fotos serializadas")
         return jsonify({
             'success': True,
             'count': len(photos),
             'photos': photos
         }), 200
     except Exception as e:
+        print(f"❌ Erro ao listar fotos: {str(e)}")
+        print(f"   Traceback: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -456,21 +474,26 @@ def search_photos():
 @app.route('/api/replicaset/status', methods=['GET'])
 def get_replicaset_status():
     """Retorna o status detalhado dos membros do Replica Set"""
+    print("📡 Requisição recebida em /api/replicaset/status")
     try:
         # Executar comando no PRIMARY usando direct_connection para evitar erro de routing
         # Tentar obter status usando qualquer membro disponível
+        print("🔍 Tentando obter status do replica set...")
         try:
             status = client.admin.command('replSetGetStatus')
+            print("✅ Status obtido com sucesso do cliente principal")
         except Exception as e:
             # Se falhar, tentar conectar diretamente no PRIMARY conhecido
-            print(f"Aviso ao obter status: {e}")
+            print(f"⚠️ Aviso ao obter status: {e}")
+            print("🔄 Tentando conexão direta com o PRIMARY...")
             # Criar cliente temporário direto para admin commands
             temp_client = MongoClient(
-                "mongodb://192.168.0.8:27017/?directConnection=true",
-                serverSelectionTimeoutMS=2000
+                "mongodb://10.63.144.180:27017/?directConnection=true",
+                serverSelectionTimeoutMS=5000
             )
             status = temp_client.admin.command('replSetGetStatus')
             temp_client.close()
+            print("✅ Status obtido via conexão direta")
         
         members = []
         for member in status.get('members', []):
@@ -482,6 +505,7 @@ def get_replicaset_status():
                 'pingMs': member.get('pingMs', 'N/A')
             })
         
+        print(f"📊 Retornando dados de {len(members)} membros")
         return jsonify({
             'success': True,
             'replica_set_name': status.get('set'),
@@ -489,8 +513,8 @@ def get_replicaset_status():
         }), 200
     except Exception as e:
         error_traceback = traceback.format_exc()
-        print(f"Erro no endpoint /api/replicaset/status: {str(e)}")
-        print(f"Traceback: {error_traceback}")
+        print(f"❌ Erro no endpoint /api/replicaset/status: {str(e)}")
+        print(f"📋 Traceback: {error_traceback}")
         return jsonify({
             'success': False,
             'error': str(e),
@@ -501,14 +525,14 @@ def get_replicaset_status():
 @app.route('/<path:path>')
 def serve_static_files(path):
     """Serve arquivos estáticos do diretório frontend"""
-    return send_from_directory('frontend', path)
+    return send_from_directory('../frontend', path)
 
 
 # Rota raiz
 @app.route('/')
 def index():
     """Serve a página de login como página inicial"""
-    response = send_from_directory('frontend', 'login.html')
+    response = send_from_directory('../frontend', 'login.html')
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
@@ -533,5 +557,5 @@ if __name__ == '__main__':
     print("  GET  /api/replicaset/status - Status do Replica Set")
     print("\n")
     
-    # Run in non-debug mode for more stable background execution on Windows
+    # Run in non-debug mode for stable Windows execution
     app.run(debug=False, host='0.0.0.0', port=5000)

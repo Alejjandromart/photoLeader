@@ -95,10 +95,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const item = document.createElement("div");
     item.classList.add("item-galeria");
 
-    // Criar imagem usando a URL do GridFS
+    // Criar imagem usando a URL da API
     const img = document.createElement("img");
     const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:5000`;
-    img.src = foto.photo_url ? `${API_BASE_URL}${foto.photo_url}` : "img/iconPhotoLeader.png";
+    img.src = `${API_BASE_URL}/api/photos/${foto._id}/file`;
     img.alt = foto.description || foto.filename;
     img.style.width = "100%";
     img.style.height = "200px";
